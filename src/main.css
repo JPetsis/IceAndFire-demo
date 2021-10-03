@@ -1,0 +1,18 @@
+.loading {
+  text-align: center;
+  padding-bottom: 2rem;
+  padding-top: 2rem;
+}
+
+.error {
+  text-align: center;
+  padding-bottom: 2rem;
+  padding-top: 2rem;
+}
+
+h1 {
+  font-weight: bold;
+  padding-bottom: 2rem;
+  padding-top: 2rem;
+  text-align: center;
+}
