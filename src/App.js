@@ -1,6 +1,4 @@
 import React, { Fragment, useState, useEffect } from "react"
-import { useQuery } from "react-query"
-import axios from "axios"
 import HouseContent from "./components/houseContent"
 import {
   Button,
@@ -14,42 +12,44 @@ import {
   Table,
 } from "reactstrap"
 
-async function fetchHouses(page) {
-  console.log("Fetch Houses Function => ", page)
-  const { data } = await axios.get(
-    `https://www.anapioficeandfire.com/api/houses?page=${page}&pageSize=13`
-  )
-  return data
-}
+import apiServices from "./services/apiServices"
 
 function App() {
   const [modal, setModal] = useState(false)
   const [modalContent, setModalContent] = useState({ title: "", body: "" })
   const [page, setPage] = useState(0)
+  const [data, setData] = useState(null)
 
   const toggle = () => setModal(!modal)
 
-  // const fetchHouses = async (page = 1) =>
-  //   await fetch(`https://www.anapioficeandfire.com/api/houses?page=${page}&pageSize=13`).then(
-  //     (res) => res.json()
-  //   )
+  useEffect(() => {
+    getHousesPage()
+  }, [getHousesPage])
 
-  const { data, error, isError, isLoading, isFetching, isPreviousData } = useQuery(
-    ["houses", page],
-    () => fetchHouses(page),
-    { keepPreviousData: true }
-  )
-  console.log(data)
+  useEffect(() => {
+    getHousesPage()
+  }, [page])
 
-  if (isLoading) {
+  const getHousesPage = () => {
+    apiServices
+      .getHousesByPage(page + 1)
+      .then((houses) => {
+        const hasMore =
+          houses.headers.link.split(",")[0].match(/(?<=rel=")(.*?)(?=")/g)[0] === "next"
+        if (data) {
+          let currentData = data.data
+          houses.data.forEach((el) => currentData.push(el))
+          setData({ hasMore: hasMore, data: currentData })
+        } else setData({ hasMore: hasMore, data: houses.data })
+      })
+      .catch((err) => console.error(err))
+  }
+
+  if (!data)
     return <div className="loading">Please wait a minute! Loading data may take some time...</div>
-  }
-  if (isError) {
-    return <div className="error">Error! {error.message}</div>
-  }
 
   const renderTable = () => {
-    let Houses = data.map((house, index) => {
+    let Houses = data.data.map((house, index) => {
       return (
         <tr key={index}>
           <td>{index + 1}</td>
@@ -94,21 +94,17 @@ function App() {
             {renderTable()}
           </Col>
         </Row>
-        <span>Current Page: {page + 1}</span>
-        <button onClick={() => setPage((old) => Math.max(old - 1, 0))} disabled={page === 0}>
-          Previous Page
-        </button>{" "}
-        <button
+        <Button
+          color="primary"
           onClick={() => {
-            if (!isPreviousData && data.hasMore) {
+            if (data.hasMore) {
               setPage((old) => old + 1)
             }
           }}
-          disabled={isPreviousData || !data?.hasMore}
+          disabled={!data.hasMore}
         >
-          Next Page
-        </button>
-        {isFetching ? <span> Loading...</span> : null}{" "}
+          Load more
+        </Button>
       </Container>
       <Modal isOpen={modal} toggle={toggle}>
         <ModalHeader toggle={toggle}>{modalContent.title}</ModalHeader>
