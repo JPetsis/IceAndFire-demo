@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react"
+import React, { Fragment, useState, useEffect } from "react"
 import { useQuery } from "react-query"
 import axios from "axios"
 import HouseContent from "./components/houseContent"
@@ -14,18 +14,33 @@ import {
   Table,
 } from "reactstrap"
 
-async function fetchHouses() {
-  const { data } = await axios.get("https://www.anapioficeandfire.com/api/houses?pageSize=14")
+async function fetchHouses(page) {
+  console.log("Fetch Houses Function => ", page)
+  const { data } = await axios.get(
+    `https://www.anapioficeandfire.com/api/houses?page=${page}&pageSize=13`
+  )
   return data
 }
 
 function App() {
   const [modal, setModal] = useState(false)
   const [modalContent, setModalContent] = useState({ title: "", body: "" })
+  const [page, setPage] = useState(0)
 
   const toggle = () => setModal(!modal)
 
-  const { data, error, isError, isLoading } = useQuery("houses", fetchHouses)
+  // const fetchHouses = async (page = 1) =>
+  //   await fetch(`https://www.anapioficeandfire.com/api/houses?page=${page}&pageSize=13`).then(
+  //     (res) => res.json()
+  //   )
+
+  const { data, error, isError, isLoading, isFetching, isPreviousData } = useQuery(
+    ["houses", page],
+    () => fetchHouses(page),
+    { keepPreviousData: true }
+  )
+  console.log(data)
+
   if (isLoading) {
     return <div className="loading">Please wait a minute! Loading data may take some time...</div>
   }
@@ -79,6 +94,21 @@ function App() {
             {renderTable()}
           </Col>
         </Row>
+        <span>Current Page: {page + 1}</span>
+        <button onClick={() => setPage((old) => Math.max(old - 1, 0))} disabled={page === 0}>
+          Previous Page
+        </button>{" "}
+        <button
+          onClick={() => {
+            if (!isPreviousData && data.hasMore) {
+              setPage((old) => old + 1)
+            }
+          }}
+          disabled={isPreviousData || !data?.hasMore}
+        >
+          Next Page
+        </button>
+        {isFetching ? <span> Loading...</span> : null}{" "}
       </Container>
       <Modal isOpen={modal} toggle={toggle}>
         <ModalHeader toggle={toggle}>{modalContent.title}</ModalHeader>

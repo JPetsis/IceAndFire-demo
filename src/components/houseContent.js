@@ -2,8 +2,7 @@ import React from "react"
 import "./houseContent.css"
 
 function HouseContent({ house }) {
-  // I'm not sure if you've ever seen object destructuring before but { house } is the same as props.house
-  console.log(house) // This will help see whats within the house object
+  console.log(house)
   return (
     <div>
       <h4>Details</h4>
